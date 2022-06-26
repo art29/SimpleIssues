@@ -12,7 +12,7 @@ export default class IssuesController {
     labels: schema.array.optional().members(schema.string()),
   })
 
-  public async index({ auth, response, bouncer }: HttpContextContract) {
+  public async index({ auth, request, response, bouncer }: HttpContextContract) {
     const organization = await auth.user?.related('organization').query().first()
     await bouncer.authorize('githubRequest', organization?.installation_id)
 
@@ -23,6 +23,7 @@ export default class IssuesController {
         owner: auth.user?.defaultOrganization,
         repo: auth.user?.defaultRepo,
         state: 'open',
+        ...(request.qs().labels && { labels: request.qs().labels.join(',') }),
       }
     )
 
@@ -123,7 +124,7 @@ export default class IssuesController {
         issue_number: +request.param('id'),
         state: 'closed',
       }
-    ).catch((e) => console.log(e))
+    )
 
     if (deletedIssue && deletedIssue?.status === 200) {
       response.ok({

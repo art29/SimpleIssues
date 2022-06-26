@@ -30,7 +30,7 @@ export default class OrganizationsController {
         (
           await OrganizationUser.query()
             .where('user_id', auth.user.id)
-            .andWhere('organization_id', auth.user.organization_id)
+            .andWhere('organization_id', auth.user.organizationId)
             .first()
         )?.role === 'admin',
       'You are not an admin for that Organization...',
@@ -43,7 +43,7 @@ export default class OrganizationsController {
     )
 
     const newUser: OrganizationUser = await OrganizationUser.create({
-      organization_id: auth.user?.organization_id,
+      organization_id: auth.user?.organizationId,
       user_id: auth.user?.id,
       role: 'regular',
     })
@@ -62,7 +62,7 @@ export default class OrganizationsController {
         (
           await OrganizationUser.query()
             .where('user_id', auth.user.id)
-            .andWhere('organization_id', auth.user.organization_id)
+            .andWhere('organization_id', auth.user.organizationId)
             .first()
         )?.role === 'admin',
       'You are not an admin for that Organization...',
@@ -76,7 +76,7 @@ export default class OrganizationsController {
 
     const user = await OrganizationUser.query()
       .where('user_id', auth.user?.id!)
-      .andWhere('organization_id', auth.user?.organization_id!)
+      .andWhere('organization_id', auth.user?.organizationId!)
       .firstOrFail()
 
     await user.delete()
@@ -96,7 +96,7 @@ export default class OrganizationsController {
         (
           await OrganizationUser.query()
             .where('user_id', auth.user.id)
-            .andWhere('organization_id', auth.user.organization_id)
+            .andWhere('organization_id', auth.user.organizationId)
             .first()
         )?.role === 'admin',
       'You are not an admin for that Organization...',
@@ -110,7 +110,7 @@ export default class OrganizationsController {
 
     await OrganizationUser.query()
       .where('user_id', auth.user?.id!)
-      .andWhere('organization_id', auth.user?.organization_id!)
+      .andWhere('organization_id', auth.user?.organizationId!)
       .update('role', request.body().role)
 
     response.ok({ success: true })

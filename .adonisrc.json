@@ -46,6 +46,6 @@
   "metaFiles": [
     ".env",
     ".adonisrc.json",
-    "config/github-private.key.pem"
+    "config/github-private-key.pem"
   ]
 }

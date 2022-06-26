@@ -3,7 +3,7 @@ import BaseSchema from '@ioc:Adonis/Lucid/Schema'
 export default class extends BaseSchema {
   protected tableName = 'organization_users'
 
-  public async up () {
+  public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
       table.integer('user_id').unsigned().references('users.id').onDelete('CASCADE')
@@ -12,7 +12,7 @@ export default class extends BaseSchema {
         .enu('role', ['regular', 'admin'], {
           useNative: true,
           enumName: 'role',
-          existingType: true,
+          existingType: false,
           schemaName: 'public',
         })
         .defaultTo('regular')
@@ -25,7 +25,7 @@ export default class extends BaseSchema {
     })
   }
 
-  public async down () {
+  public async down() {
     this.schema.dropTable(this.tableName)
   }
 }

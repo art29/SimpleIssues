@@ -59,7 +59,6 @@
     "@adonisjs/repl": "^3.1.0",
     "@octokit/auth-app": "^3.6.1",
     "@octokit/rest": "^18.12.0",
-    "@poppinss/file-generator": "^1.0.2",
     "luxon": "^2.4.0",
     "pg": "^8.7.3",
     "phc-argon2": "^1.1.3",

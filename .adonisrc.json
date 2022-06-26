@@ -42,5 +42,10 @@
   },
   "testProviders": [
     "@japa/preset-adonis/TestsProvider"
+  ],
+  "metaFiles": [
+    ".env",
+    ".adonisrc.json",
+    "config/github-private.key.pem"
   ]
 }

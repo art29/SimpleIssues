@@ -26,9 +26,21 @@ export default class IssuesController {
       }
     )
 
-    if (issues) {
+    const labels = await githubWrapper(
+      organization?.installation_id,
+      'GET /repos/{owner}/{repo}/labels',
+      {
+        owner: auth.user?.defaultOrganization,
+        repo: auth.user?.defaultRepo,
+      }
+    )
+
+    if (issues && labels) {
       response.ok({
         issues: issues.data,
+        labels: labels.data,
+        organization: auth.user?.defaultOrganization,
+        repo: auth.user?.defaultRepo,
       })
     } else {
       response.internalServerError('An error occurred while getting Github data...')
@@ -52,7 +64,7 @@ export default class IssuesController {
         ...(payload.assignees && { assignees: payload.assignees }),
         ...(payload.milestone && { milestone: payload.milestone }),
         ...(payload.labels
-          ? { labels: [payload.labels, 'client-created'] }
+          ? { labels: [...payload.labels, 'client-created'] }
           : { labels: ['client-created'] }),
       }
     )
@@ -78,13 +90,13 @@ export default class IssuesController {
       {
         owner: auth.user?.defaultOrganization,
         repo: auth.user?.defaultRepo,
-        issue_number: request.param('id'),
+        issue_number: +request.param('id'),
         title: payload.title,
         body: payload.body,
         ...(payload.assignees && { assignees: payload.assignees }),
         ...(payload.milestone && { milestone: payload.milestone }),
         ...(payload.labels
-          ? { labels: [payload.labels, 'client-created'] }
+          ? { labels: [...payload.labels, 'client-created'] }
           : { labels: ['client-created'] }),
       }
     )
@@ -102,20 +114,20 @@ export default class IssuesController {
     const organization = await auth.user?.related('organization').query().first()
     await bouncer.authorize('githubRequest', organization?.installation_id)
 
-    const updatedIssue: boolean | OctokitResponse<any> = await githubWrapper(
+    const deletedIssue: boolean | OctokitResponse<any> = await githubWrapper(
       organization?.installation_id,
       'PATCH /repos/{owner}/{repo}/issues/{issue_number}',
       {
         owner: auth.user?.defaultOrganization,
         repo: auth.user?.defaultRepo,
-        issue_number: request.param('id'),
+        issue_number: +request.param('id'),
         state: 'closed',
       }
-    )
+    ).catch((e) => console.log(e))
 
-    if (updatedIssue && updatedIssue?.status === 200) {
+    if (deletedIssue && deletedIssue?.status === 200) {
       response.ok({
-        issues: updatedIssue.data,
+        issues: deletedIssue.data,
       })
     } else {
       response.internalServerError('An error occurred while updating the issue...')

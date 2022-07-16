@@ -1,5 +1,5 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { githubWrapper } from 'App/Services/GithubService'
+import { githubLogin, githubWrapper } from 'App/Services/GithubService'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import { OctokitResponse } from '@octokit/types'
 
@@ -16,35 +16,45 @@ export default class IssuesController {
     const organization = await auth.user?.related('organization').query().first()
     await bouncer.authorize('githubRequest', organization?.installation_id)
 
-    const issues = await githubWrapper(
-      organization?.installation_id,
-      'GET /repos/{owner}/{repo}/issues',
-      {
-        owner: auth.user?.defaultOrganization,
-        repo: auth.user?.defaultRepo,
-        state: 'open',
-        ...(request.qs().labels && { labels: request.qs().labels.join(',') }),
-      }
-    )
+    if (organization?.installation_id) {
+      const appOctokit = await githubLogin(organization?.installation_id)
 
-    const labels = await githubWrapper(
-      organization?.installation_id,
-      'GET /repos/{owner}/{repo}/labels',
-      {
-        owner: auth.user?.defaultOrganization,
-        repo: auth.user?.defaultRepo,
-      }
-    )
+      const issues = await githubWrapper(
+        organization?.installation_id,
+        'GET /repos/{owner}/{repo}/issues',
+        {
+          owner: auth.user?.defaultOrganization,
+          repo: auth.user?.defaultRepo,
+          state: 'open',
+          ...(request.qs().labels && { labels: request.qs().labels.join(',') }),
+        },
+        appOctokit
+      )
 
-    if (issues && labels) {
-      response.ok({
-        issues: issues.data,
-        labels: labels.data,
-        organization: auth.user?.defaultOrganization,
-        repo: auth.user?.defaultRepo,
-      })
+      const labels = await githubWrapper(
+        organization?.installation_id,
+        'GET /repos/{owner}/{repo}/labels',
+        {
+          owner: auth.user?.defaultOrganization,
+          repo: auth.user?.defaultRepo,
+        },
+        appOctokit
+      )
+
+      if (issues && labels) {
+        response.ok({
+          issues: issues.data,
+          labels: labels.data,
+          organization: auth.user?.defaultOrganization,
+          repo: auth.user?.defaultRepo,
+        })
+      } else {
+        response.internalServerError('An error occurred while getting Github data...')
+      }
     } else {
-      response.internalServerError('An error occurred while getting Github data...')
+      response.internalServerError(
+        'An error occurred while getting the Github App Installation ID...'
+      )
     }
   }
 

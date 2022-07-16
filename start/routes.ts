@@ -24,6 +24,7 @@ Route.group(() => {
   Route.post('register', 'AuthController.register')
   Route.post('login', 'AuthController.login')
   Route.post('logout', 'AuthController.logout')
+  Route.post('feedback/send', 'FeedbacksController.send')
   Route.group(() => {
     Route.post('organizations/activate', 'OrganizationsController.activate')
     Route.post('organizations/add_user', 'OrganizationsController.add_user')

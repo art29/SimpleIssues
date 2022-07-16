@@ -4,16 +4,13 @@ import * as fs from 'fs'
 import { Octokit } from '@octokit/core'
 import { join } from 'path'
 
-const githubLogin = async (installationId: string) => {
+export const githubLogin = async (installationId: string) => {
   const privateKey: string = fs.readFileSync(
     join(__dirname + '../../../' + '/config/github-private-key.pem'),
     'utf-8'
   )
-  // .replace('-----BEGIN RSA PRIVATE KEY-----', '')
-  // .replace('-----END RSA PRIVATE KEY-----', '')
-  // .trim()
 
-  const appOctokit = new Octokit({
+  return new Octokit({
     authStrategy: createAppAuth,
     auth: {
       appId: Env.get('GITHUB_APP_ID'),
@@ -23,18 +20,21 @@ const githubLogin = async (installationId: string) => {
       installationId: installationId,
     },
   })
-
-  return appOctokit
 }
 
 export const githubWrapper = async (
   installationId: string | undefined,
   url: string,
-  params: any
+  params: any,
+  octokit?: Octokit
 ) => {
   if (!installationId) {
     return false
   }
-  const appOctokit = await githubLogin(installationId)
-  return await appOctokit.request(url, params)
+  if (octokit) {
+    return await octokit.request(url, params)
+  } else {
+    const appOctokit = await githubLogin(installationId)
+    return await appOctokit.request(url, params)
+  }
 }

@@ -12,7 +12,7 @@ export default class OrganizationsController {
     })
 
     if (org.id) {
-      const orgUser: OrganizationUser = await OrganizationUser.create({
+      const orgUser: OrganizationUser = await OrganizationUser.firstOrCreate({
         organization_id: org.id,
         user_id: auth.user?.id,
         role: 'admin',

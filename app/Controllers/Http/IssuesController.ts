@@ -2,6 +2,7 @@ import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { githubLogin, githubWrapper } from 'App/Services/GithubService'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import { OctokitResponse } from '@octokit/types'
+import OrganizationUser from 'App/Models/OrganizationUser'
 
 export default class IssuesController {
   private issueSchema = schema.create({
@@ -14,6 +15,14 @@ export default class IssuesController {
 
   public async index({ auth, request, response, bouncer }: HttpContextContract) {
     const organization = await auth.user?.related('organization').query().first()
+    response.abortUnless(
+      await OrganizationUser.query()
+        .where('user_id', auth.user!.id)
+        .andWhere('organization_id', auth.user!.organizationId)
+        .first(),
+      'You do not have the valid permissions to access this organization',
+      403
+    )
     await bouncer.authorize('githubRequest', organization?.installation_id)
 
     if (organization?.installation_id) {

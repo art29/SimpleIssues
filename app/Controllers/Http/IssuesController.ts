@@ -6,7 +6,7 @@ import { OctokitResponse } from '@octokit/types'
 export default class IssuesController {
   private issueSchema = schema.create({
     title: schema.string(),
-    body: schema.string(),
+    body: schema.string.optional(),
     assignees: schema.array.optional().members(schema.string()),
     milestone: schema.number.optional(),
     labels: schema.array.optional().members(schema.string()),

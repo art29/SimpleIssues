@@ -34,5 +34,5 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            exec bash \-l
+            exec bash
             bash deploy-simpleissues-api.sh

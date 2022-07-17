@@ -35,4 +35,4 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             exec bash \-l
-            ./deploy-simpleissues-api.sh
+            bash deploy-simpleissues-api.sh

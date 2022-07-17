@@ -34,5 +34,6 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            exec bash
-            bash deploy-simpleissues-api.sh
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
+            sh deploy-simpleissues-api.sh

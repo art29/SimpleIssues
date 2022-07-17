@@ -1,0 +1,32 @@
+name: Test & Deploy
+on: [push, pull_request]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Using NodeJS 16.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.x
+      - name: Running Prettier
+        run: yarn run prettier:check
+      - name: Run Lint
+        run: yarn run lint
+  deploy:
+    name: Deploy
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Deploy through SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: sh deploy-simple-issues-api.sh

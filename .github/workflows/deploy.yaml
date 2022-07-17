@@ -13,13 +13,15 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 16.x
+      - name: Install dependencies
+        run: yarn install
       - name: Running Prettier
         run: yarn run prettier:check
       - name: Run Lint
         run: yarn run lint
   deploy:
     name: Deploy
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

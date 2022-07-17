@@ -2,7 +2,7 @@ name: Test & Deploy
 on: [push, pull_request]
 
 jobs:
-  format:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Codebase
@@ -20,6 +20,7 @@ jobs:
       - name: Run Lint
         run: yarn run lint
   deploy:
+    needs: test
     name: Deploy
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

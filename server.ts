@@ -13,14 +13,6 @@
 import 'reflect-metadata'
 import sourceMapSupport from 'source-map-support'
 import { Ignitor } from '@adonisjs/core/build/standalone'
-import * as Airbrake from '@airbrake/node'
-import Env from '@ioc:Adonis/Core/Env'
-
-new Airbrake.Notifier({
-  projectId: 440660,
-  projectKey: Env.get('AIRBRAKE_PROJECT_ID'),
-  environment: Env.get('AIRBRAKE_PROJECT_KEY'),
-})
 
 sourceMapSupport.install({ handleUncaughtExceptions: false })
 

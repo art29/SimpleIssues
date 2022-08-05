@@ -33,6 +33,4 @@ export default Env.rules({
   SES_ACCESS_SECRET: Env.schema.string(),
   SES_REGION: Env.schema.string(),
   FRONT_END_URL: Env.schema.string(),
-  AIRBRAKE_PROJECT_ID: Env.schema.string(),
-  AIRBRAKE_PROJECT_KEY: Env.schema.string(),
 })

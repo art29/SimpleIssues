@@ -60,6 +60,7 @@
     "@adonisjs/mail": "^8.1.2",
     "@adonisjs/repl": "^3.1.0",
     "@adonisjs/view": "^6.1.6",
+    "@airbrake/node": "^2.1.7",
     "@octokit/auth-app": "^3.6.1",
     "@octokit/rest": "^18.12.0",
     "aws-sdk": "^2.1176.0",

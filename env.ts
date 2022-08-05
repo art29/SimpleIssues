@@ -32,4 +32,5 @@ export default Env.rules({
   SES_ACCESS_KEY: Env.schema.string(),
   SES_ACCESS_SECRET: Env.schema.string(),
   SES_REGION: Env.schema.string(),
+  FRONT_END_URL: Env.schema.string(),
 })

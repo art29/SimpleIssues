@@ -3,6 +3,7 @@ import { githubLogin, githubWrapper } from 'App/Services/GithubService'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import { OctokitResponse } from '@octokit/types'
 import OrganizationUser from 'App/Models/OrganizationUser'
+const parse = require('parse-link-header')
 
 export default class IssuesController {
   private issueSchema = schema.create({
@@ -36,6 +37,8 @@ export default class IssuesController {
           repo: auth.user?.defaultRepo,
           state: 'open',
           ...(request.qs().labels && { labels: request.qs().labels.join(',') }),
+          per_page: 12,
+          page: request.qs().page ?? 1,
         },
         appOctokit
       )
@@ -53,8 +56,12 @@ export default class IssuesController {
       if (issues && labels) {
         response.ok({
           issues: issues.data,
+          max_page: parse(issues.headers.link)?.last?.page ?? request.qs().page ?? 1,
           labels: labels.data,
-          organization: auth.user?.defaultOrganization,
+          organization: {
+            id: auth.user?.organizationId,
+            name: auth.user?.defaultOrganization,
+          },
           repo: auth.user?.defaultRepo,
         })
       } else {
@@ -105,7 +112,7 @@ export default class IssuesController {
     const payload = await request.validate({ schema: this.issueSchema })
 
     const updatedIssue: boolean | OctokitResponse<any> = await githubWrapper(
-      organization?.installation_id,
+      organization!.installation_id,
       'PATCH /repos/{owner}/{repo}/issues/{issue_number}',
       {
         owner: auth.user?.defaultOrganization,
@@ -116,8 +123,8 @@ export default class IssuesController {
         ...(payload.assignees && { assignees: payload.assignees }),
         ...(payload.milestone && { milestone: payload.milestone }),
         ...(payload.labels
-          ? { labels: [...payload.labels, 'client-created'] }
-          : { labels: ['client-created'] }),
+          ? { labels: [...payload.labels, ...organization!.added_labels.split(',')] }
+          : { labels: organization!.added_labels.split(',') }),
       }
     )
 

@@ -5,6 +5,8 @@ import User from 'App/Models/User'
 import Database from '@ioc:Adonis/Lucid/Database'
 import OrganizationInvite from 'App/Models/OrganizationInvite'
 import { githubLogin, githubWrapper } from 'App/Services/GithubService'
+import Mail from '@ioc:Adonis/Addons/Mail'
+import Env from '@ioc:Adonis/Core/Env'
 
 export default class OrganizationsController {
   public async activate({ auth, request, response }: HttpContextContract) {
@@ -22,6 +24,9 @@ export default class OrganizationsController {
         user_id: auth.user?.id,
         role: 'admin',
       })
+      if (auth.user && !auth.user?.organizationId) {
+        await User.query().where('id', auth.user.id).update('organization_id', org.id)
+      }
       response.ok(orgUser)
     } else {
       response.internalServerError('An error occurred while creating the Organization.')
@@ -68,7 +73,17 @@ export default class OrganizationsController {
       appOctokit
     )
 
-    response.ok({ users: users, organization: org, labels: labels })
+    if (labels && org) {
+      response.ok({
+        users: users,
+        organization: org,
+        labels: labels.data.map((l) => l.name),
+        mandatory_labels: org?.mandatory_labels ? org?.mandatory_labels.split(',') : [],
+        added_labels: org?.added_labels ? org?.added_labels.split(',') : [],
+      })
+    } else {
+      response.internalServerError({ error: 'Error occurred while getting labels' })
+    }
   }
 
   public async add_user({ auth, request, response }: HttpContextContract) {
@@ -84,20 +99,49 @@ export default class OrganizationsController {
       'You are not an admin for that Organization...',
       422
     )
-    response.abortUnless(
-      await User.findByOrFail('email', request.body().email),
-      'User not found.',
-      422
-    )
 
-    const newUser: OrganizationUser = await OrganizationUser.create({
-      organization_id: auth.user?.organizationId,
-      user_id: request.body().user_id,
-      role: 'regular',
-    })
+    let newUser: OrganizationUser | OrganizationInvite
+    const user = await User.findBy('email', request.body().email)
+    if (user) {
+      newUser = await OrganizationUser.firstOrCreate(
+        { organization_id: auth.user?.organizationId, user_id: user.id },
+        {
+          organization_id: auth.user?.organizationId,
+          user_id: request.body().id,
+          role: 'regular',
+        }
+      )
+    } else {
+      newUser = await OrganizationInvite.firstOrCreate({
+        organizationId: auth.user?.organizationId,
+        email: request.body().email,
+      })
+    }
 
     if (newUser.$isPersisted) {
-      response.ok(newUser)
+      if (user && newUser.$isLocal) {
+        await Mail.send((msg) => {
+          msg
+            .from('simpleissues@afetiveau.com')
+            .to(request.body().email)
+            .subject('SimpleIssues | You have been added to an organization')
+            .htmlView('emails/added_organization', {
+              name: auth.user?.organization.name,
+            })
+        })
+      } else if (!user && newUser.$isLocal) {
+        await Mail.send(async (msg) => {
+          msg
+            .from('simpleissues@afetiveau.com')
+            .to(request.body().email)
+            .subject('SimpleIssues | You have been invited to an organization')
+            .htmlView('emails/invite', {
+              name: (await Organization.findOrFail(auth.user?.organizationId)).name,
+              link: `${Env.get('FRONT_END_URL')}/signup`,
+            })
+        })
+      }
+      response.ok({ user: newUser, type: user ? 'added' : 'invited' })
     } else {
       response.internalServerError('An error occurred while adding the new user...')
     }
@@ -116,13 +160,8 @@ export default class OrganizationsController {
       'You are not an admin for that Organization...',
       422
     )
-    response.abortUnless(
-      await User.findByOrFail('email', request.body().email),
-      'User not found.',
-      422
-    )
 
-    Organization.query()
+    await Organization.query()
       .where('id', auth.user!.organizationId)
       .update('mandatory_labels', request.body().mandatory_labels)
 
@@ -142,43 +181,12 @@ export default class OrganizationsController {
       'You are not an admin for that Organization...',
       422
     )
-    response.abortUnless(
-      await User.findByOrFail('email', request.body().email),
-      'User not found.',
-      422
-    )
 
-    Organization.query()
+    await Organization.query()
       .where('id', auth.user!.organizationId)
-      .update('mandatory_labels', request.body().added_labels)
+      .update('added_labels', request.body().added_labels)
 
     response.ok({ success: true })
-  }
-
-  public async invite_user({ auth, request, response }: HttpContextContract) {
-    response.abortIf(!request.body().email, 'Missing email', 422)
-    response.abortUnless(
-      !auth.user ||
-        (
-          await OrganizationUser.query()
-            .where('user_id', auth.user.id)
-            .andWhere('organization_id', auth.user.organizationId)
-            .first()
-        )?.role === 'admin',
-      'You are not an admin for that Organization...',
-      422
-    )
-
-    const invitedUser = await OrganizationInvite.create({
-      organizationId: auth.user?.organizationId,
-      email: request.body().email,
-    })
-
-    if (invitedUser.$isPersisted) {
-      response.ok(invitedUser)
-    } else {
-      response.internalServerError('An error occurred while adding the new user...')
-    }
   }
 
   public async remove_user({ auth, request, response }: HttpContextContract) {

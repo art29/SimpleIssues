@@ -38,6 +38,7 @@ export default class AuthController {
       )
 
       await OrganizationInvite.query().where('email', user.email).update('active', false)
+      User.query().where('user_id', user.id).update('organization_id', invites[0].organizationId)
     }
 
     const token = await auth.use('api').generate(user)
@@ -113,14 +114,18 @@ export default class AuthController {
     response.abortUnless(auth.user, 'Missing User Id', 500)
     const passwordChangeSchema = await request.validate({
       schema: schema.create({
+        old_password: schema.string({ trim: true }),
         password: schema.string({ trim: true }, [rules.confirmed()]),
       }),
     })
 
     const user: User = await User.findOrFail(auth.user!.id)
-    user.password = passwordChangeSchema.password
-    await user.save()
-
-    response.ok({ success: true })
+    if (!(await Hash.verify(user.password, passwordChangeSchema.old_password))) {
+      return response.badRequest('Invalid credentials')
+    } else {
+      user.password = passwordChangeSchema.password
+      await user.save()
+      response.ok({ success: true })
+    }
   }
 }

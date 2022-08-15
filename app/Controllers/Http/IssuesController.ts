@@ -36,8 +36,15 @@ export default class IssuesController {
           owner: auth.user?.defaultOrganization,
           repo: auth.user?.defaultRepo,
           state: 'open',
-          ...(request.qs().labels && { labels: request.qs().labels.join(',') }),
-          per_page: 12,
+          ...((request.qs().labels || organization.mandatory_labels) && {
+            labels: [
+              ...new Set([
+                ...(request.qs().labels ?? []),
+                ...(organization.mandatory_labels ? organization.mandatory_labels.split(',') : []),
+              ]),
+            ].join(','),
+          }),
+          per_page: 6,
           page: request.qs().page ?? 1,
         },
         appOctokit
@@ -91,8 +98,13 @@ export default class IssuesController {
         ...(payload.assignees && { assignees: payload.assignees }),
         ...(payload.milestone && { milestone: payload.milestone }),
         ...(payload.labels
-          ? { labels: [...payload.labels, 'client-created'] }
-          : { labels: ['client-created'] }),
+          ? {
+              labels: [
+                ...payload.labels,
+                ...(organization!.added_labels ? organization!.added_labels.split(',') : []),
+              ],
+            }
+          : { labels: organization!.added_labels ? organization!.added_labels.split(',') : [] }),
       }
     )
 
@@ -123,7 +135,12 @@ export default class IssuesController {
         ...(payload.assignees && { assignees: payload.assignees }),
         ...(payload.milestone && { milestone: payload.milestone }),
         ...(payload.labels
-          ? { labels: [...payload.labels, ...organization!.added_labels.split(',')] }
+          ? {
+              labels: [
+                ...payload.labels,
+                ...(organization!.added_labels ? organization!.added_labels.split(',') : []),
+              ],
+            }
           : { labels: organization!.added_labels.split(',') }),
       }
     )

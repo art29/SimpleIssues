@@ -14,7 +14,11 @@ export default class Organization extends BaseModel {
     prepare: (value?: unknown) => (!value ? null : Encryption.encrypt(value)),
   })
   public installation_id: string
+
+  @column()
   public mandatory_labels: string
+
+  @column()
   public added_labels: string
 
   @column.dateTime({ autoCreate: true })

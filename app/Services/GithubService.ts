@@ -28,12 +28,12 @@ export const githubWrapper = async (
   params: any,
   octokit?: Octokit
 ) => {
-  if (!installationId) {
-    return false
-  }
   if (octokit) {
     return await octokit.request(url, params)
   } else {
+    if (!installationId) {
+      return false
+    }
     const appOctokit = await githubLogin(installationId)
     return await appOctokit.request(url, params)
   }

@@ -8,9 +8,11 @@ import User from 'App/Models/User'
 
 export default class UsersController {
   private static async getRepos(organizationId: number) {
-    const organization: Organization = await Organization.findOrFail(organizationId)
+    const organization: Organization | null = await Organization.find(organizationId)
 
-    return await githubWrapper(organization.installation_id, 'GET /installation/repositories', {})
+    return organization?.installation_id
+      ? await githubWrapper(organization.installation_id, 'GET /installation/repositories', {})
+      : null
   }
 
   public async organizations({ auth, response }: HttpContextContract) {
@@ -80,5 +82,16 @@ export default class UsersController {
     } else {
       response.internalServerError('An error occurred while getting Github data...')
     }
+  }
+
+  public async user_info({ auth, response }: HttpContextContract) {
+    const orgUser = await OrganizationUser.query()
+      .where('user_id', auth.user!.id)
+      .andWhere('organization_id', auth.user!.organizationId)
+      .first()
+
+    response.ok({
+      organization_admin: orgUser?.role === 'admin',
+    })
   }
 }

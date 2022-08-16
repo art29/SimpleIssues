@@ -7,6 +7,7 @@ import Encryption from '@ioc:Adonis/Core/Encryption'
 import OrganizationUser from 'App/Models/OrganizationUser'
 import OrganizationInvite from 'App/Models/OrganizationInvite'
 import Env from '@ioc:Adonis/Core/Env'
+import captchaService from 'App/Services/CaptchaService'
 
 export default class AuthController {
   public async register({ request, auth, response }: HttpContextContract) {
@@ -24,25 +25,32 @@ export default class AuthController {
       schema: validationSchema,
     })
 
-    const user = await User.create(validatedData)
-    const invites = await OrganizationInvite.query().where('email', user.email)
+    if (request.body().token && (await captchaService(request.body().token))) {
+      const user = await User.create(validatedData)
+      const invites = await OrganizationInvite.query().where('email', user.email)
 
-    if (invites.length) {
-      await OrganizationUser.createMany(
-        invites.map((oi) => {
-          return {
-            email: user.email,
-            organization_id: oi.organizationId,
-          }
-        })
+      if (invites.length) {
+        await OrganizationUser.createMany(
+          invites.map((oi) => {
+            return {
+              email: user.email,
+              organization_id: oi.organizationId,
+            }
+          })
+        )
+
+        await OrganizationInvite.query().where('email', user.email).update('active', false)
+        User.query().where('user_id', user.id).update('organization_id', invites[0].organizationId)
+      }
+
+      const token = await auth.use('api').generate(user)
+      return response.json({ user, token })
+    } else {
+      return response.abort(
+        { success: false, error: 'We do not accept bots on this website.' },
+        400
       )
-
-      await OrganizationInvite.query().where('email', user.email).update('active', false)
-      User.query().where('user_id', user.id).update('organization_id', invites[0].organizationId)
     }
-
-    const token = await auth.use('api').generate(user)
-    return response.json({ user, token })
   }
 
   public async logout({ auth }: HttpContextContract) {

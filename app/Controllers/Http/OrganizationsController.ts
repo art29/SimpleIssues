@@ -148,7 +148,6 @@ export default class OrganizationsController {
   }
 
   public async mandatory_labels({ auth, request, response }: HttpContextContract) {
-    response.abortIf(!request.body().mandatory_labels, 'Missing mandatory labels', 422)
     response.abortUnless(
       !auth.user ||
         (

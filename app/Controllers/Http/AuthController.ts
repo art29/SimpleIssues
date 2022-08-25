@@ -86,7 +86,6 @@ export default class AuthController {
       msg
         .from('simpleissues@afetiveau.com')
         .to(user.email)
-        .cc('simpleissues@afetiveau.com')
         .subject('SimpleIssues | Reset your password')
         .htmlView('emails/reset_password', {
           name,

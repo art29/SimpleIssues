@@ -163,13 +163,12 @@ export default class OrganizationsController {
 
     await Organization.query()
       .where('id', auth.user!.organizationId)
-      .update('mandatory_labels', request.body().mandatory_labels)
+      .update('mandatory_labels', request.body().mandatory_labels ?? '')
 
     response.ok({ success: true })
   }
 
   public async added_labels({ auth, request, response }: HttpContextContract) {
-    response.abortIf(!request.body().added_labels, 'Missing added labels', 422)
     response.abortUnless(
       !auth.user ||
         (
@@ -184,7 +183,7 @@ export default class OrganizationsController {
 
     await Organization.query()
       .where('id', auth.user!.organizationId)
-      .update('added_labels', request.body().added_labels)
+      .update('added_labels', request.body().added_labels ?? '')
 
     response.ok({ success: true })
   }

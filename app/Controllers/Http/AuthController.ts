@@ -33,14 +33,15 @@ export default class AuthController {
         await OrganizationUser.createMany(
           invites.map((oi) => {
             return {
-              email: user.email,
+              user_id: user.id,
               organization_id: oi.organizationId,
-            }
+              role: 'regular',
+            } as Partial<OrganizationUser>
           })
         )
 
         await OrganizationInvite.query().where('email', user.email).update('active', false)
-        User.query().where('user_id', user.id).update('organization_id', invites[0].organizationId)
+        await User.query().where('id', user.id).update('organization_id', invites[0].organizationId)
       }
 
       const token = await auth.use('api').generate(user)

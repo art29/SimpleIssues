@@ -7,7 +7,7 @@ import { githubWrapper } from 'App/Services/GithubService'
 import User from 'App/Models/User'
 
 export default class UsersController {
-  private static async getRepos(organizationId: number) {
+  public static async getRepos(organizationId: number) {
     const organization: Organization | null = await Organization.find(organizationId)
 
     return organization?.installation_id

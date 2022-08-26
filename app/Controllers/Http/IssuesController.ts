@@ -3,6 +3,8 @@ import { githubLogin, githubWrapper } from 'App/Services/GithubService'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import { OctokitResponse } from '@octokit/types'
 import OrganizationUser from 'App/Models/OrganizationUser'
+import User from 'App/Models/User'
+import UsersController from 'App/Controllers/Http/UsersController'
 const parse = require('parse-link-header')
 
 export default class IssuesController {
@@ -29,12 +31,25 @@ export default class IssuesController {
     if (organization?.installation_id) {
       const appOctokit = await githubLogin(organization?.installation_id)
 
+      if (!auth.user?.defaultOrganization && auth.user?.organizationId) {
+        const repoOrg = await UsersController.getRepos(auth.user!.organizationId)
+
+        if (repoOrg && repoOrg.data?.repositories[0]) {
+          await User.query().where('id', auth.user!.id).update({
+            default_organization: repoOrg.data.repositories[0].owner.login,
+            default_repo: repoOrg.data.repositories[0].name,
+          })
+        }
+      }
+
+      const user: User = await User.findOrFail(auth.user?.id)
+
       const issues = await githubWrapper(
         organization?.installation_id,
         'GET /repos/{owner}/{repo}/issues',
         {
-          owner: auth.user?.defaultOrganization,
-          repo: auth.user?.defaultRepo,
+          owner: user.defaultOrganization,
+          repo: user.defaultRepo,
           state: 'open',
           ...((request.qs().labels || organization.mandatory_labels) && {
             labels: [
@@ -54,8 +69,8 @@ export default class IssuesController {
         organization?.installation_id,
         'GET /repos/{owner}/{repo}/labels',
         {
-          owner: auth.user?.defaultOrganization,
-          repo: auth.user?.defaultRepo,
+          owner: user.defaultOrganization,
+          repo: user.defaultRepo,
         },
         appOctokit
       )
@@ -66,10 +81,10 @@ export default class IssuesController {
           max_page: parse(issues.headers.link)?.last?.page ?? request.qs().page ?? 1,
           labels: labels.data,
           organization: {
-            id: auth.user?.organizationId,
-            name: auth.user?.defaultOrganization,
+            id: user.organizationId,
+            name: user.defaultOrganization,
           },
-          repo: auth.user?.defaultRepo,
+          repo: user.defaultRepo,
         })
       } else {
         response.internalServerError('An error occurred while getting Github data...')

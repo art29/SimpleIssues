@@ -8,6 +8,7 @@ import OrganizationUser from 'App/Models/OrganizationUser'
 import OrganizationInvite from 'App/Models/OrganizationInvite'
 import Env from '@ioc:Adonis/Core/Env'
 import captchaService from 'App/Services/CaptchaService'
+import validateReCaptcha from 'App/Services/CaptchaService'
 
 export default class AuthController {
   public async register({ request, auth, response }: HttpContextContract) {
@@ -83,18 +84,22 @@ export default class AuthController {
       '24 hours'
     )}`
 
-    await Mail.send((msg) => {
-      msg
-        .from('simpleissues@afetiveau.com')
-        .to(user.email)
-        .subject('SimpleIssues | Reset your password')
-        .htmlView('emails/reset_password', {
-          name,
-          link,
-        })
-    })
+    if (request.input('token') && (await validateReCaptcha(request.input('token')))) {
+      await Mail.send((msg) => {
+        msg
+          .from('simpleissues@afetiveau.com')
+          .to(user.email)
+          .subject('SimpleIssues | Reset your password')
+          .htmlView('emails/reset_password', {
+            name,
+            link,
+          })
+      })
 
-    response.ok({ success: true })
+      response.ok({ success: true })
+    } else {
+      response.ok({ success: false })
+    }
   }
 
   public async reset_password({ request, response }: HttpContextContract) {
